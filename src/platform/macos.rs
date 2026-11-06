@@ -325,10 +325,11 @@ pub trait EventLoopExtMacOS {
   /// [`run_return`](crate::platform::run_return::EventLoopExtRunReturn::run_return).
   fn set_dock_visibility(&mut self, visible: bool);
 
-  /// Used to prevent the application from automatically activating when launched if
-  /// another application is already active
+  /// Used to prevent the application from activating itself when launched.
   ///
-  /// The default behavior is to ignore other applications and activate when launched.
+  /// The default behavior is to ignore other applications and activate when launched. With `false`, the
+  /// application makes no activation request and Launch Services decides: it activates a foreground launch and
+  /// leaves a background launch (`open -g`) in the background.
   ///
   /// This function only takes effect if it's called before calling
   /// [`run`](crate::event_loop::EventLoop::run) or

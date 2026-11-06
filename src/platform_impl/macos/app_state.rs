@@ -288,8 +288,10 @@ impl AppState {
       let ns_app = NSApp(mtm);
       window_activation_hack(&ns_app);
       let ignore = get_aux_state_mut(app_delegate).activate_ignoring_other_apps;
-      #[allow(deprecated)]
-      ns_app.activateIgnoringOtherApps(ignore);
+      if let Some(ignore) = launch_activation(ignore) {
+        #[allow(deprecated)]
+        ns_app.activateIgnoringOtherApps(ignore);
+      }
 
       let dock_visible = get_aux_state_mut(app_delegate).dock_visibility;
       if !dock_visible {
@@ -428,6 +430,32 @@ impl AppState {
 ///
 /// If this becomes too bothersome to maintain, it can probably be removed
 /// without too much damage.
+/// The activation that the application requests when it finishes launching: `Some(ignore)` calls
+/// `activateIgnoringOtherApps(ignore)`, and `None` makes no call.
+///
+/// Launch Services activates an application that it launches in the foreground and leaves a background launch
+/// (`open -g`) in the background. `activateIgnoringOtherApps(false)` still activates the application when no other
+/// application is active, so an application that does not ignore other applications makes no call and leaves the
+/// activation to Launch Services.
+fn launch_activation(activate_ignoring_other_apps: bool) -> Option<bool> {
+  activate_ignoring_other_apps.then_some(true)
+}
+
+#[cfg(test)]
+mod launch_activation_tests {
+  use super::launch_activation;
+
+  #[test]
+  fn an_application_that_does_not_ignore_other_apps_leaves_the_launch_activation_to_the_system() {
+    assert_eq!(launch_activation(false), None);
+  }
+
+  #[test]
+  fn an_application_that_ignores_other_apps_activates_when_it_finishes_launching() {
+    assert_eq!(launch_activation(true), Some(true));
+  }
+}
+
 unsafe fn window_activation_hack(ns_app: &NSApplication) {
   // Get the application's windows
   // TODO: Proper ordering of the windows
